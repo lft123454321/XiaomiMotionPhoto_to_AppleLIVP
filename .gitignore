@@ -1,0 +1,15 @@
+# Output files
+output_livp/
+*.livp
+
+# Example files
+livp_example/
+source_xiaomi_motion_photo/
+
+# Temporary files
+*.pyc
+__pycache__/
+.DS_Store
+
+# Backup files
+*_backup.py
