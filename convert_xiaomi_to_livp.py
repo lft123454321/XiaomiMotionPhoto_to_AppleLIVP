@@ -137,7 +137,34 @@ def convert_mp4_to_mov(mp4_path: str, mov_path: str):
     ])
     
     subprocess.run(cmd, check=True, capture_output=True)
+    
+    # Add Apple Live Photo metadata using mutagen
+    add_live_photo_metadata_mutagen(mov_path)
+    
     logging.info(f"Converted MP4 to MOV: {mov_path}")
+
+def add_live_photo_metadata_mutagen(mov_path: str):
+    """Add Apple Live Photo metadata using mutagen library."""
+    from mutagen.mp4 import MP4, MP4Tags
+    import uuid
+    
+    video = MP4(mov_path)
+    if video.tags is None:
+        video.tags = MP4Tags()
+    
+    content_id = str(uuid.uuid4()).upper()
+    
+    # Add Apple Live Photo metadata
+    video.tags['----:com.apple.quicktime.live-photo:auto'] = [b'1']
+    video.tags['----:com.apple.quicktime.content:identifier'] = [content_id.encode()]
+    video.tags['----:com.apple.quicktime.live-photo:vitality-score'] = [b'0.9']
+    video.tags['----:com.apple.quicktime.live-photo:vitality-scoring-version'] = [b'0']
+    video.tags['----:com.apple.quicktime:make'] = [b'Apple']
+    video.tags['----:com.apple.quicktime:model'] = [b'iPhone']
+    video.tags['----:com.apple.quicktime:software'] = [b'16.0']
+    
+    video.save()
+    logging.info(f"Added Live Photo metadata to {mov_path}")
 
 def create_livp(heic_path: str, mov_path: str, output_livp_path: str, img_filename: str, vid_filename: str, timestamp: float = None):
     """Create a LIVP (ZIP) file containing HEIC and MOV."""
