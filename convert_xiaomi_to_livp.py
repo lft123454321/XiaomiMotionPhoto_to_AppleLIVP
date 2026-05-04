@@ -78,13 +78,64 @@ def copy_exif_data(source_jpeg: str, target_heic: str):
         logging.info(f"Copied EXIF data from {source_jpeg} to {target_heic}")
 
 def convert_mp4_to_mov(mp4_path: str, mov_path: str):
-    """Convert MP4 to MOV using ffmpeg (copy streams)."""
-    cmd = [
-        'ffmpeg', '-i', mp4_path,
-        '-c', 'copy',
+    """Convert MP4 to MOV with Apple Live Photo compatible settings."""
+    # Get source video info
+    probe_cmd = ['ffprobe', '-v', 'quiet', '-print_format', 'json', '-show_streams', mp4_path]
+    probe_result = subprocess.run(probe_cmd, capture_output=True, text=True)
+    if probe_result.returncode != 0:
+        raise RuntimeError(f"ffprobe failed: {probe_result.stderr}")
+    
+    import json
+    streams = json.loads(probe_result.stdout)['streams']
+    video_stream = next((s for s in streams if s['codec_type'] == 'video'), None)
+    
+    if not video_stream:
+        raise ValueError("No video stream found")
+    
+    # Get source parameters
+    src_width = int(video_stream['width'])
+    
+    # Target parameters (matching reference LIVP files)
+    # Scale to max 1920 width while maintaining aspect ratio
+    target_width = 1920
+    if src_width > target_width:
+        scale_filter = f"scale={target_width}:-2"  # -2 maintains even height
+    else:
+        scale_filter = None
+    
+    # Build FFmpeg command
+    cmd = ['ffmpeg', '-i', mp4_path]
+    
+    # Video filters
+    vf_parts = []
+    if scale_filter:
+        vf_parts.append(scale_filter)
+    vf_parts.append('format=yuv420p')  # Ensure pixel format
+    
+    cmd.extend([
+        '-vf', ','.join(vf_parts),
+        '-c:v', 'libx265',
+        '-tag:v', 'hvc1',  # HEVC tag for Apple compatibility
+        '-preset', 'fast',
+        '-crf', '28',  # Quality (lower = better, 28 is reasonable)
+        '-r', '15',  # Target framerate 15fps (matches some references)
+    ])
+    
+    # Audio: PCM 16-bit 44100Hz mono (matching reference)
+    cmd.extend([
+        '-c:a', 'pcm_s16le',
+        '-ar', '44100',
+        '-ac', '1',
+    ])
+    
+    # Output format
+    cmd.extend([
         '-movflags', '+faststart',
+        '-metadata:s:v:0', 'handler_name=Core Media Video',
+        '-metadata:s:a:0', 'handler_name=Core Media Audio',
         mov_path
-    ]
+    ])
+    
     subprocess.run(cmd, check=True, capture_output=True)
     logging.info(f"Converted MP4 to MOV: {mov_path}")
 
