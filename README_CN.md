@@ -18,7 +18,7 @@ Python版本：**3.8+**
 ## 安装说明
 1. 安装Python依赖：
    ```bash
-   pip install pillow pillow-heif pyexiv2
+   pip install pillow pillow-heif pyexiv2 mutagen
    ```
 2. 安装外部工具：
    - [FFmpeg](https://ffmpeg.org/) → 用于MP4转MOV

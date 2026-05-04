@@ -18,7 +18,7 @@ Python: **3.8+**
 ## Installation
 1. Install Python dependencies:
    ```bash
-   pip install pillow pillow-heif pyexiv2
+   pip install pillow pillow-heif pyexiv2 mutagen
    ```
 2. Install external tools:
    - [FFmpeg](https://ffmpeg.org/) - for MP4 to MOV conversion
